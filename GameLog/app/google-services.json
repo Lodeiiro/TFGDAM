@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "843797431964",
+    "project_id": "gamelog-85836",
+    "storage_bucket": "gamelog-85836.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:843797431964:android:9d16456a687d6ef8a8cf59",
+        "android_client_info": {
+          "package_name": "com.marcolodeiro.gamelog"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "843797431964-jii4hm1t9b03mspgjtaqn75ks0fpdn58.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.marcolodeiro.gamelog",
+            "certificate_hash": "3211ba2a345f93b7772a98979780587ec077bf75"
+          }
+        },
+        {
+          "client_id": "843797431964-dun95gd3c2vvi086bobt8epdkqal34fd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCN6_ZN4okSMjLpNcWUsId-KQzeZ4NVZhs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "843797431964-dun95gd3c2vvi086bobt8epdkqal34fd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

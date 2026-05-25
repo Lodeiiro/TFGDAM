@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.marcolodeiro.gamelog" />
+                  <option name="mobileSdkAppId" value="1:843797431964:android:9d16456a687d6ef8a8cf59" />
+                  <option name="projectId" value="gamelog-85836" />
+                  <option name="projectNumber" value="843797431964" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />
