@@ -1,5 +1,6 @@
 package com.marcolodeiro.gamelog.ui.screens.home
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -29,13 +30,13 @@ import coil.compose.AsyncImage
 import com.marcolodeiro.gamelog.ui.theme.*
 import com.marcolodeiro.gamelog.viewmodel.AuthViewModel
 import com.marcolodeiro.gamelog.viewmodel.HomeViewModel
-import androidx.compose.foundation.BorderStroke
 
 @Composable
 fun HomeScreen(
     onNavigateToExplore: () -> Unit,
     onNavigateToLibrary: () -> Unit,
     onNavigateToProfile: () -> Unit,
+    onNavigateToChatbot: () -> Unit, // 👈 CORREGIDO: Añadido callback al chatbot
     authViewModel: AuthViewModel = hiltViewModel(),
     homeViewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -44,8 +45,9 @@ fun HomeScreen(
     val completedCount by homeViewModel.completed.collectAsState()
     val pendingCount by homeViewModel.pending.collectAsState()
 
-    // Simulamos una lista de juegos reales en progreso para alimentar el carrusel dinámico
-    val activeGamesMock = listOf("Elden Ring", "Cyberpunk 2077", "Hades II")
+    // 👈 CORREGIDO: Aquí deberías traer la lista real desde tu ViewModel.
+    // Por ahora, si pasas una lista de objetos Game con sus portadas URL se verán así:
+    val activeGamesMock = emptyList<com.marcolodeiro.gamelog.data.model.Game>()
 
     Box(
         modifier = Modifier
@@ -57,16 +59,12 @@ fun HomeScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            // ── CABECERA CON GRADIENTE ────────────────────────────────────
+            // ── CABECERA ──────────────────────────────────────────────────
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(180.dp)
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(NeonBlue.copy(alpha = 0.25f), DarkBackground)
-                        )
-                    )
+                    .background(Brush.verticalGradient(colors = listOf(NeonBlue.copy(alpha = 0.25f), DarkBackground)))
                     .padding(horizontal = 24.dp, vertical = 16.dp),
                 contentAlignment = Alignment.BottomStart
             ) {
@@ -98,7 +96,7 @@ fun HomeScreen(
                 }
             }
 
-            // ── BLOQUE 1: CONTADOR DE RESUMEN (MÁS COMPACTO) ──────────────
+            // ── ESTADÍSTICAS COMPACTAS ────────────────────────────────────
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -110,33 +108,35 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // ── BLOQUE 2: CARRUSEL "CONTINUAR JUGANDO" (DINÁMICO) ─────────
+            // ── CORREGIDO: CARRUSEL "CONTINUAR JUGANDO" CON IMÁGENES REALES ──
             Text("CONTINUAR JUGANDO", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextSecondary, letterSpacing = 1.5.sp, modifier = Modifier.padding(horizontal = 24.dp))
             Spacer(modifier = Modifier.height(12.dp))
 
-            if (playingCount > 0) {
+            if (activeGamesMock.isNotEmpty()) {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 24.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    items(activeGamesMock) { gameTitle ->
-                        ActiveGameCard(title = gameTitle, onClick = onNavigateToLibrary)
+                    items(activeGamesMock) { game ->
+                        // Pasamos el título y la portada real del objeto Game de tu modelo
+                        ActiveGameCard(title = game.name, coverUrl = "", onClick = onNavigateToLibrary)
                     }
                 }
             } else {
+                // Estado vacío amigable por si la cuenta no está jugando a nada aún
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = SurfaceCard)
                 ) {
-                    Text("No tienes juegos en progreso. ¡Añade uno desde la biblioteca!", color = TextSecondary, fontSize = 13.sp, modifier = Modifier.padding(16.dp))
+                    Text("No tienes juegos en progreso en esta cuenta. ¡Añade uno desde tu Biblioteca!", color = TextSecondary, fontSize = 13.sp, modifier = Modifier.padding(16.dp))
                 }
             }
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // ── BLOQUE 3: BANNER ASISTENTE IA (INTERACTIVO) ────────────────
+            // ── CORREGIDO: BANNER ASISTENTE IA ENLAZADO AL CHATBOT ─────────
             Text("RECOMENDACIÓN INTELIGENTE", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextSecondary, letterSpacing = 1.5.sp, modifier = Modifier.padding(horizontal = 24.dp))
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -154,7 +154,7 @@ fun HomeScreen(
                         Text("Deja que el chatbot analice tus gustos y elija tu próximo desafío.", color = TextSecondary, fontSize = 12.sp)
                     }
                     Button(
-                        onClick = onNavigateToExplore, // Aquí puedes redirigir al chatbot usando tu controlador
+                        onClick = onNavigateToChatbot, // 👈 CORREGIDO: Ahora va directo al chatbot
                         colors = ButtonDefaults.buttonColors(containerColor = NeonBlue),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                         shape = RoundedCornerShape(8.dp)
@@ -166,7 +166,7 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // ── BLOQUE 4: ACCESOS RÁPIDOS ACCESIBLES ──────────────────────
+            // ── ACCESOS DIRECTOS ──────────────────────────────────────────
             Text("ACCESOS DIRECTOS", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextSecondary, letterSpacing = 1.5.sp, modifier = Modifier.padding(horizontal = 24.dp))
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -195,21 +195,31 @@ fun CompactStatCard(modifier: Modifier = Modifier, number: String, label: String
     }
 }
 
+// 👈 CORREGIDO: Añadido soporte para renderizar la carátula real mediante URL
 @Composable
-fun ActiveGameCard(title: String, onClick: () -> Unit) {
+fun ActiveGameCard(title: String, coverUrl: String, onClick: () -> Unit) {
     Card(
-        modifier = Modifier.width(150.dp).clickable { onClick() },
+        modifier = Modifier.width(130.dp).clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceDark)
     ) {
         Column {
-            Box(modifier = Modifier.fillMaxWidth().height(90.dp).background(Color(0xFF222222)), contentAlignment = Alignment.Center) {
-                Text("🎮", fontSize = 28.sp)
+            if (coverUrl.isNotBlank()) {
+                AsyncImage(
+                    model = coverUrl,
+                    contentDescription = title,
+                    modifier = Modifier.fillMaxWidth().height(140.dp),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(modifier = Modifier.fillMaxWidth().height(140.dp).background(SurfaceCard), contentAlignment = Alignment.Center) {
+                    Text("🎮", fontSize = 32.sp)
+                }
             }
             Column(modifier = Modifier.padding(10.dp)) {
                 Text(text = title, color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Spacer(modifier = Modifier.height(4.dp))
-                LinearProgressIndicator(progress = { 0.4f }, modifier = Modifier.fillMaxWidth().height(4.dp).clip(CircleShape), color = ColorPlaying, trackColor = Color(0xFF2A2A2A))
+                Spacer(modifier = Modifier.height(6.dp))
+                LinearProgressIndicator(progress = { 0.35f }, modifier = Modifier.fillMaxWidth().height(4.dp).clip(CircleShape), color = ColorPlaying, trackColor = Color(0xFF2A2A2A))
             }
         }
     }

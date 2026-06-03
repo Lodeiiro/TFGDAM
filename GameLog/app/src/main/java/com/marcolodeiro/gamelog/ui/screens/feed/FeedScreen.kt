@@ -6,11 +6,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Comment
-import androidx.compose.material.icons.filled.NewReleases
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
@@ -61,7 +56,7 @@ fun FeedScreen(
             )
         }
 
-        // ── PESTAÑAS (TAB ROW) NATIVAS ────────────────────────────────────
+        // ── PESTAÑAS (TAB ROW) ────────────────────────────────────────────
         TabRow(
             selectedTabIndex = selectedTab,
             containerColor = SurfaceDark,
@@ -89,17 +84,17 @@ fun FeedScreen(
             }
         }
 
-        // ── CONTENIDO DINÁMICO SEGÚN PESTAÑA ──────────────────────────────
+        // ── CONTENIDO REAL SEGÚN PESTAÑA ──────────────────────────────────
         when (selectedTab) {
-            0 -> ActivityTabContent(state, viewModel)
-            1 -> OpinionsTabContent() // Foro / Reviews detalladas
-            2 -> NewsTabContent()     // Anuncios oficiales de la industria
+            0 -> ActivityTabContent(state, viewModel, onlyReviews = false)
+            1 -> ActivityTabContent(state, viewModel, onlyReviews = true) // 👈 CORREGIDO: Mismo estado, pero filtrando reviews reales
+            2 -> NewsTabContent() // Noticias del sector
         }
     }
 }
 
 @Composable
-fun ActivityTabContent(state: FeedState, viewModel: FeedViewModel) {
+fun ActivityTabContent(state: FeedState, viewModel: FeedViewModel, onlyReviews: Boolean) {
     when (val currentState = state) {
         is FeedState.Loading -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -113,22 +108,27 @@ fun ActivityTabContent(state: FeedState, viewModel: FeedViewModel) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(currentState.message, color = TextSecondary, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        onClick = { viewModel.loadFeed() },
-                        colors = ButtonDefaults.buttonColors(containerColor = NeonBlue)
-                    ) { Text("Reintentar") }
+                    Button(onClick = { viewModel.loadFeed() }, colors = ButtonDefaults.buttonColors(containerColor = NeonBlue)) { Text("Reintentar") }
                 }
             }
         }
         is FeedState.Success -> {
-            if (currentState.items.isEmpty()) {
-                EmptyStateView(icon = "👥", text = "Sigue a otros gamers para ver su actividad")
+            // 👈 CORREGIDO: Filtramos los items de la base de datos si estamos en la pestaña opiniones
+            val itemsToShow = if (onlyReviews) {
+                currentState.items.filter { it.status == "COMPLETED" || it.status == "PLATINUM" }
+            } else {
+                currentState.items
+            }
+
+            if (itemsToShow.isEmpty()) {
+                val emptyText = if (onlyReviews) "Aún no hay opiniones o análisis de juegos publicados." else "Sigue a otros gamers para ver su actividad."
+                EmptyStateView(icon = if (onlyReviews) "📝" else "👥", text = emptyText)
             } else {
                 LazyColumn(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(currentState.items) { item ->
+                    items(itemsToShow) { item ->
                         FeedItemCard(item = item)
                     }
                 }
@@ -138,50 +138,11 @@ fun ActivityTabContent(state: FeedState, viewModel: FeedViewModel) {
 }
 
 @Composable
-fun OpinionsTabContent() {
-    // Simulamos un tablón comunitario enriquecido
-    val mockOpinions = listOf(
-        Pair("Geralt_Es", "¡Acabo de terminar The Witcher 3 por tercera vez! Sigue siendo una obra maestra indiscutible, la narrativa de los DLCs destroza al 90% de juegos actuales... 🎭 #Review"),
-        Pair("Kratos99", "Pregunta seria: ¿Creéis que el nuevo DLC merece la pena o es puro reciclaje? Estoy dudando si pillarlo en las rebajas de verano 🤔 #Debate")
-    )
-
-    LazyColumn(
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        items(mockOpinions) { (user, review) ->
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = SurfaceDark),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(NeonBlue), contentAlignment = Alignment.Center) {
-                            Text(user.first().toString(), color = Color.White, fontWeight = FontWeight.Bold)
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(user, color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    }
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text(review, color = TextSecondary, fontSize = 14.sp, lineHeight = 20.sp)
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        IconButton(onClick = {}) { Row { Icon(Icons.Default.ThumbUp, "", tint = TextSecondary, modifier = Modifier.size(18.dp)); Spacer(modifier = Modifier.width(4.dp)); Text("12", color = TextSecondary, fontSize = 12.sp) } }
-                        IconButton(onClick = {}) { Row { Icon(Icons.Default.Comment, "", tint = TextSecondary, modifier = Modifier.size(18.dp)); Spacer(modifier = Modifier.width(4.dp)); Text("4", color = TextSecondary, fontSize = 12.sp) } }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
 fun NewsTabContent() {
-    // Tablón informativo simulado
+    // Aquí puedes enlazarlo en el futuro con un NewsViewModel, de momento queda estructurado de forma limpia:
     val mockNews = listOf(
-        Pair("Anuncio Oficial del E3 2026", "Se confirman las fechas del evento más esperado del año. Nuevos tráilers exclusivos en camino."),
-        Pair("Parche de optimización Next-Gen", "La última actualización mejora drásticamente la tasa de frames en consolas portátiles.")
+        Pair("Próximos lanzamientos Junio 2026", "Repasamos los títulos más potentes que llegan a las tiendas esta semana."),
+        Pair("Nueva actualización de Firmware", "Mejoras de rendimiento de red para optimizar las partidas en la nube.")
     )
 
     LazyColumn(
@@ -194,14 +155,10 @@ fun NewsTabContent() {
                 colors = CardDefaults.cardColors(containerColor = SurfaceCard),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.NewReleases, contentDescription = null, tint = ColorPlaying, modifier = Modifier.size(32.dp))
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column {
-                        Text(title, color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(content, color = TextSecondary, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    }
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(title, color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(content, color = TextSecondary, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
             }
         }
@@ -212,9 +169,9 @@ fun NewsTabContent() {
 fun EmptyStateView(icon: String, text: String) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(icon, fontSize = 48.sp)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = text, color = TextSecondary, fontSize = 14.sp)
+            Text(icon, fontSize = 44.sp)
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(text = text, color = TextSecondary, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 32.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         }
     }
 }
@@ -249,12 +206,7 @@ fun FeedItemCard(item: FeedItem) {
         Column(modifier = Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 if (item.userPhoto.isNotBlank()) {
-                    AsyncImage(
-                        model = item.userPhoto,
-                        contentDescription = item.userName,
-                        modifier = Modifier.size(36.dp).clip(CircleShape),
-                        contentScale = ContentScale.Crop
-                    )
+                    AsyncImage(model = item.userPhoto, contentDescription = item.userName, modifier = Modifier.size(36.dp).clip(CircleShape), contentScale = ContentScale.Crop)
                 } else {
                     Box(modifier = Modifier.size(36.dp).clip(CircleShape).background(NeonBlue), contentAlignment = Alignment.Center) {
                         Text(text = item.userName.firstOrNull()?.toString() ?: "G", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
@@ -271,12 +223,7 @@ fun FeedItemCard(item: FeedItem) {
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (item.gameCover.isNotBlank()) {
-                    AsyncImage(
-                        model = item.gameCover,
-                        contentDescription = item.gameName,
-                        modifier = Modifier.size(56.dp, 72.dp).clip(RoundedCornerShape(8.dp)),
-                        contentScale = ContentScale.Crop
-                    )
+                    AsyncImage(model = item.gameCover, contentDescription = item.gameName, modifier = Modifier.size(56.dp, 72.dp).clip(RoundedCornerShape(8.dp)), contentScale = ContentScale.Crop)
                 } else {
                     Box(modifier = Modifier.size(56.dp, 72.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFF2A2A2A)), contentAlignment = Alignment.Center) {
                         Text("🎮", fontSize = 24.sp)
