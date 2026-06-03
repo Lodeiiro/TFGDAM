@@ -160,7 +160,8 @@ fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) 
             HomeScreen(
                 onNavigateToExplore = { navController.navigate(Screen.Explore.route) },
                 onNavigateToLibrary = { navController.navigate(Screen.Library.route) },
-                onNavigateToProfile = { navController.navigate(Screen.Profile.route) }
+                onNavigateToProfile = { navController.navigate(Screen.Profile.route) },
+                onNavigateToChatbot = { navController.navigate(Screen.Chatbot.route) }
             )
         }
 
