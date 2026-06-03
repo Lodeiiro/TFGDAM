@@ -4,47 +4,50 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import androidx.compose.material3.Text
-import com.marcolodeiro.gamelog.ui.screens.auth.LoginScreen
-import com.marcolodeiro.gamelog.ui.screens.explore.ExploreScreen
-import com.marcolodeiro.gamelog.ui.screens.home.HomeScreen
-import com.marcolodeiro.gamelog.ui.theme.GameLogTheme
-import dagger.hilt.android.AndroidEntryPoint
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.DynamicFeed
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryBooks
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.DynamicFeed
-import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.ui.Modifier
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.marcolodeiro.gamelog.ui.screens.auth.LoginScreen
 import com.marcolodeiro.gamelog.ui.screens.chatbot.ChatbotScreen
 import com.marcolodeiro.gamelog.ui.screens.detail.GameDetailScreen
+import com.marcolodeiro.gamelog.ui.screens.explore.ExploreScreen
 import com.marcolodeiro.gamelog.ui.screens.feed.FeedScreen
+import com.marcolodeiro.gamelog.ui.screens.home.HomeScreen
 import com.marcolodeiro.gamelog.ui.screens.library.LibraryScreen
 import com.marcolodeiro.gamelog.ui.screens.profile.ProfileScreen
 import com.marcolodeiro.gamelog.ui.screens.social.SearchUsersScreen
 import com.marcolodeiro.gamelog.ui.theme.AccentRed
+import com.marcolodeiro.gamelog.ui.theme.GameLogTheme
 import com.marcolodeiro.gamelog.ui.theme.SurfaceDark
 import com.marcolodeiro.gamelog.ui.theme.TextPrimary
 import com.marcolodeiro.gamelog.ui.theme.TextSecondary
+import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -57,28 +60,27 @@ class MainActivity : ComponentActivity() {
                 val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
 
                 Scaffold(
-
                     floatingActionButton = {
-                        FloatingActionButton(
-                            onClick = {
-                                navController.navigate("chatbot") {
-                                    popUpTo("home") { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            containerColor = AccentRed, // O el color que prefieras para el fondo del botón
-                            contentColor = TextPrimary // Color del icono
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.AutoAwesome, // O puedes importar un icono de estrella/chispa
-                                contentDescription = "Chatbot"
-                            )
+                        if (currentRoute != "login") {
+                            FloatingActionButton(
+                                onClick = {
+                                    navController.navigate("chatbot") {
+                                        popUpTo("home") { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                },
+                                containerColor = AccentRed,
+                                contentColor = TextPrimary
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.AutoAwesome,
+                                    contentDescription = "Chatbot"
+                                )
+                            }
                         }
                     },
-
                     bottomBar = {
-                        // Solo mostramos la barra si no estamos en login
                         if (currentRoute != "login") {
                             NavigationBar(containerColor = SurfaceDark) {
                                 NavigationBarItem(
@@ -124,7 +126,6 @@ class MainActivity : ComponentActivity() {
                                         unselectedTextColor = TextSecondary
                                     )
                                 )
-
                                 NavigationBarItem(
                                     selected = currentRoute == "feed",
                                     onClick = { navController.navigate("feed") },
@@ -151,7 +152,6 @@ class MainActivity : ComponentActivity() {
                                         unselectedTextColor = TextSecondary
                                     )
                                 )
-
                                 NavigationBarItem(
                                     selected = currentRoute == "profile",
                                     onClick = { navController.navigate("profile") },
@@ -172,7 +172,19 @@ class MainActivity : ComponentActivity() {
                     NavHost(
                         navController = navController,
                         startDestination = "login",
-                        modifier = Modifier.padding(paddingValues)
+                        modifier = Modifier.padding(paddingValues),
+                        enterTransition = {
+                            slideInHorizontally(initialOffsetX = { it }) + fadeIn()
+                        },
+                        exitTransition = {
+                            slideOutHorizontally(targetOffsetX = { -it }) + fadeOut()
+                        },
+                        popEnterTransition = {
+                            slideInHorizontally(initialOffsetX = { -it }) + fadeIn()
+                        },
+                        popExitTransition = {
+                            slideOutHorizontally(targetOffsetX = { it }) + fadeOut()
+                        }
                     ) {
                         composable("login") {
                             LoginScreen(
@@ -198,7 +210,8 @@ class MainActivity : ComponentActivity() {
                                         "UTF-8"
                                     ).replace("+", "%20")
                                     navController.navigate("detail/$gameJson")
-                                }                            )
+                                }
+                            )
                         }
                         composable("library") {
                             LibraryScreen()
@@ -212,18 +225,17 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                         }
-
                         composable("search_users") {
                             SearchUsersScreen(
-                                onUserClick = { user ->
-                                    // Próximamente navegará al perfil del usuario
-                                }
+                                onUserClick = { user -> }
                             )
                         }
-
                         composable("detail/{gameJson}") { backStackEntry ->
                             val gameJson = backStackEntry.arguments?.getString("gameJson") ?: return@composable
-                            val game = com.google.gson.Gson().fromJson(gameJson, com.marcolodeiro.gamelog.data.model.Game::class.java)
+                            val game = com.google.gson.Gson().fromJson(
+                                gameJson,
+                                com.marcolodeiro.gamelog.data.model.Game::class.java
+                            )
                             GameDetailScreen(
                                 game = game,
                                 onBack = { navController.popBackStack() }
@@ -235,7 +247,6 @@ class MainActivity : ComponentActivity() {
                         composable("chatbot") {
                             ChatbotScreen()
                         }
-
                     }
                 }
             }

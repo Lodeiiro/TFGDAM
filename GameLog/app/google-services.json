@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "843797431964-j8209vknvpv2ejq941cst3h7ksh7bc88.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.marcolodeiro.gamelog",
+            "certificate_hash": "8ed2016142ec49e9ffbea410b4c7f85a29e0ecc2"
+          }
+        },
+        {
           "client_id": "843797431964-jii4hm1t9b03mspgjtaqn75ks0fpdn58.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

@@ -9,7 +9,6 @@ import com.marcolodeiro.gamelog.ui.screens.detail.GameStatus
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
-import com.marcolodeiro.gamelog.data.model.FeedItem
 
 @Singleton
 class LibraryRepository @Inject constructor(
@@ -24,13 +23,17 @@ class LibraryRepository @Inject constructor(
 
     // Añade o actualiza un juego en la biblioteca
     suspend fun addGameToLibrary(game: Game, status: GameStatus) {
+        // Log para ver qué usuario está autenticado
+        android.util.Log.d("LIBRARY", "UID actual: ${auth.currentUser?.uid}")
+        android.util.Log.d("LIBRARY", "Usuario: ${auth.currentUser?.email}")
+
         val entry = GameLibraryEntry(
-            gameId    = game.id,
-            gameName  = game.name,
-            gameCover = game.cover?.getImageUrl() ?: "",
+            gameId     = game.id,
+            gameName   = game.name,
+            gameCover  = game.cover?.getImageUrl() ?: "",
             gameRating = game.rating,
-            status    = status.name,
-            userId    = auth.currentUser?.uid ?: ""
+            status     = status.name,
+            userId     = auth.currentUser?.uid ?: ""
         )
         // Usamos el gameId como ID del documento para evitar duplicados
         libraryCollection()
@@ -67,7 +70,7 @@ class LibraryRepository @Inject constructor(
         } else null
     }
 
-    // Publica la actividad en el feed global cuando el usuario añade un juego
+    // Publica la actividad en el feed cuando el usuario añade un juego
     suspend fun publishFeedItem(game: Game, status: GameStatus) {
         val user = auth.currentUser ?: return
         val feedItem = com.marcolodeiro.gamelog.data.model.FeedItem(
@@ -81,11 +84,9 @@ class LibraryRepository @Inject constructor(
             status    = status.name,
             timestamp = System.currentTimeMillis()
         )
-        // Guardamos en la colección global de feed
         firestore.collection("feed")
             .document(feedItem.id)
             .set(feedItem)
             .await()
     }
-
 }
