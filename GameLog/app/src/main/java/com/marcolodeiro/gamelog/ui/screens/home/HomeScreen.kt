@@ -47,7 +47,7 @@ fun HomeScreen(
 
     // 👈 CORREGIDO: Aquí deberías traer la lista real desde tu ViewModel.
     // Por ahora, si pasas una lista de objetos Game con sus portadas URL se verán así:
-    val activeGamesMock = emptyList<com.marcolodeiro.gamelog.data.model.Game>()
+    val activeGames by homeViewModel.activeGames.collectAsState()
 
     Box(
         modifier = Modifier
@@ -112,25 +112,32 @@ fun HomeScreen(
             Text("CONTINUAR JUGANDO", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextSecondary, letterSpacing = 1.5.sp, modifier = Modifier.padding(horizontal = 24.dp))
             Spacer(modifier = Modifier.height(12.dp))
 
-            if (activeGamesMock.isNotEmpty()) {
+            if (activeGames.isNotEmpty()) {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 24.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    items(activeGamesMock) { game ->
-                        // Pasamos el título y la portada real del objeto Game de tu modelo
-                        ActiveGameCard(title = game.name, coverUrl = "", onClick = onNavigateToLibrary)
+                    items(activeGames) { entry ->
+                        ActiveGameCard(
+                            title = entry.gameName,
+                            coverUrl = entry.gameCover,
+                            onClick = onNavigateToLibrary
+                        )
                     }
                 }
             } else {
-                // Estado vacío amigable por si la cuenta no está jugando a nada aún
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = SurfaceCard)
                 ) {
-                    Text("No tienes juegos en progreso en esta cuenta. ¡Añade uno desde tu Biblioteca!", color = TextSecondary, fontSize = 13.sp, modifier = Modifier.padding(16.dp))
+                    Text(
+                        "No tienes juegos en progreso. ¡Añade uno desde Explorar!",
+                        color = TextSecondary,
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(16.dp)
+                    )
                 }
             }
 
