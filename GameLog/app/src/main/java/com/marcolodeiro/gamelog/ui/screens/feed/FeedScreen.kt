@@ -27,12 +27,18 @@ import com.marcolodeiro.gamelog.viewmodel.FeedState
 import com.marcolodeiro.gamelog.viewmodel.FeedViewModel
 import java.text.SimpleDateFormat
 import java.util.*
+import com.marcolodeiro.gamelog.data.model.Review
+import com.marcolodeiro.gamelog.data.model.NewsArticle
+import com.marcolodeiro.gamelog.viewmodel.NewsState
+import com.marcolodeiro.gamelog.viewmodel.NewsViewModel
 
 @Composable
 fun FeedScreen(
+    onUserClick: (String) -> Unit, // 👈 Recibido de MainActivity
     viewModel: FeedViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val reviews by viewModel.reviews.collectAsState()
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("Actividad", "Opiniones", "Noticias")
 
@@ -41,7 +47,6 @@ fun FeedScreen(
             .fillMaxSize()
             .background(DarkBackground)
     ) {
-        // ── CABECERA ──────────────────────────────────────────────────────
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -56,7 +61,6 @@ fun FeedScreen(
             )
         }
 
-        // ── PESTAÑAS (TAB ROW) ────────────────────────────────────────────
         TabRow(
             selectedTabIndex = selectedTab,
             containerColor = SurfaceDark,
@@ -84,17 +88,22 @@ fun FeedScreen(
             }
         }
 
-        // ── CONTENIDO REAL SEGÚN PESTAÑA ──────────────────────────────────
+        // 👈 CORREGIDO: Ahora pasamos onUserClick a las pestañas correspondientes
         when (selectedTab) {
-            0 -> ActivityTabContent(state, viewModel, onlyReviews = false)
-            1 -> ActivityTabContent(state, viewModel, onlyReviews = true) // 👈 CORREGIDO: Mismo estado, pero filtrando reviews reales
-            2 -> NewsTabContent() // Noticias del sector
+            0 -> ActivityTabContent(state, viewModel, onlyReviews = false, onUserClick = onUserClick)
+            1 -> ReviewsTabContent(reviews, onUserClick = onUserClick)
+            2 -> NewsTabContent()
         }
     }
 }
 
 @Composable
-fun ActivityTabContent(state: FeedState, viewModel: FeedViewModel, onlyReviews: Boolean) {
+fun ActivityTabContent(
+    state: FeedState,
+    viewModel: FeedViewModel,
+    onlyReviews: Boolean,
+    onUserClick: (String) -> Unit // 👈 Pasado por parámetro
+) {
     when (val currentState = state) {
         is FeedState.Loading -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -113,7 +122,6 @@ fun ActivityTabContent(state: FeedState, viewModel: FeedViewModel, onlyReviews: 
             }
         }
         is FeedState.Success -> {
-            // 👈 CORREGIDO: Filtramos los items de la base de datos si estamos en la pestaña opiniones
             val itemsToShow = if (onlyReviews) {
                 currentState.items.filter { it.status == "COMPLETED" || it.status == "PLATINUM" }
             } else {
@@ -124,12 +132,16 @@ fun ActivityTabContent(state: FeedState, viewModel: FeedViewModel, onlyReviews: 
                 val emptyText = if (onlyReviews) "Aún no hay opiniones o análisis de juegos publicados." else "Sigue a otros gamers para ver su actividad."
                 EmptyStateView(icon = if (onlyReviews) "📝" else "👥", text = emptyText)
             } else {
+                // 👈 CORREGIDO: Rellenado el LazyColumn para pintar los FeedItemCard reales
                 LazyColumn(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(itemsToShow) { item ->
-                        FeedItemCard(item = item)
+                        FeedItemCard(
+                            item = item,
+                            onClick = { onUserClick(item.userId) } // 👈 Al pulsar, envía el userId
+                        )
                     }
                 }
             }
@@ -138,27 +150,132 @@ fun ActivityTabContent(state: FeedState, viewModel: FeedViewModel, onlyReviews: 
 }
 
 @Composable
-fun NewsTabContent() {
-    // Aquí puedes enlazarlo en el futuro con un NewsViewModel, de momento queda estructurado de forma limpia:
-    val mockNews = listOf(
-        Pair("Próximos lanzamientos Junio 2026", "Repasamos los títulos más potentes que llegan a las tiendas esta semana."),
-        Pair("Nueva actualización de Firmware", "Mejoras de rendimiento de red para optimizar las partidas en la nube.")
-    )
+fun NewsTabContent(
+    viewModel: NewsViewModel = hiltViewModel()
+) {
+    val state by viewModel.state.collectAsState()
 
-    LazyColumn(
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+    when (val currentState = state) {
+        is NewsState.Loading -> {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = NeonBlue)
+            }
+        }
+        is NewsState.Error -> {
+            EmptyStateView(icon = "📰", text = "No se pudieron cargar las noticias")
+        }
+        is NewsState.Success -> {
+            if (currentState.articles.isEmpty()) {
+                EmptyStateView(icon = "📰", text = "No hay noticias disponibles")
+            } else {
+                LazyColumn(
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(currentState.articles) { article ->
+                        NewsCard(article = article)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun NewsCard(article: NewsArticle) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    Card(
+        onClick = {
+            // Abre la noticia en el navegador
+            val intent = android.content.Intent(
+                android.content.Intent.ACTION_VIEW,
+                android.net.Uri.parse(article.url)
+            )
+            context.startActivity(intent)
+        },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = SurfaceDark),
+        modifier = Modifier.fillMaxWidth()
     ) {
-        items(mockNews) { (title, content) ->
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = SurfaceCard),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(title, color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+        Column {
+            // Imagen de la noticia
+            if (article.urlToImage.isNotBlank()) {
+                AsyncImage(
+                    model = article.urlToImage,
+                    contentDescription = article.title,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(160.dp)
+                        .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            }
+
+            Column(modifier = Modifier.padding(14.dp)) {
+                // Fuente y fecha
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = NeonBlue.copy(alpha = 0.15f)
+                    ) {
+                        Text(
+                            text = article.source.name,
+                            color = NeonBlue,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
+                    }
+                    Text(
+                        text = article.publishedAt.take(10),
+                        color = TextSecondary,
+                        fontSize = 11.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Título
+                Text(
+                    text = article.title,
+                    color = TextPrimary,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                // Descripción
+                if (article.description.isNotBlank()) {
                     Spacer(modifier = Modifier.height(6.dp))
-                    Text(content, color = TextSecondary, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        text = article.description,
+                        color = TextSecondary,
+                        fontSize = 13.sp,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                        lineHeight = 18.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Botón leer más
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Text(
+                        text = "Leer más →",
+                        color = NeonBlue,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
@@ -177,7 +294,10 @@ fun EmptyStateView(icon: String, text: String) {
 }
 
 @Composable
-fun FeedItemCard(item: FeedItem) {
+fun FeedItemCard(
+    item: FeedItem,
+    onClick: () -> Unit // 👈 Parámetro de click añadido
+) {
     val statusLabel = GameStatus.entries.find { it.name == item.status }?.label ?: item.status
     val statusColor = when (item.status) {
         "PLAYING"   -> Color(0xFF4CAF50)
@@ -201,7 +321,8 @@ fun FeedItemCard(item: FeedItem) {
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceDark),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick // 👈 CORREGIDO: Hacemos la tarjeta clickable
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
@@ -244,6 +365,117 @@ fun FeedItemCard(item: FeedItem) {
                     }
                 }
             }
+        }
+    }
+}
+
+// Pestaña de opiniones con reseñas reales de Firestore
+@Composable
+fun ReviewsTabContent(
+    reviews: List<Review>,
+    onUserClick: (String) -> Unit // 👈 Añadido parámetro
+) {
+    if (reviews.isEmpty()) {
+        EmptyStateView(
+            icon = "📝",
+            text = "Sigue a otros gamers para ver sus reseñas aquí"
+        )
+    } else {
+        LazyColumn(
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(reviews) { review ->
+                ReviewFeedCard(
+                    review = review,
+                    onClick = { onUserClick(review.userId) } // 👈 Captura el click
+                )
+            }
+        }
+    }
+}
+
+// Tarjeta de reseña en el feed
+@Composable
+fun ReviewFeedCard(
+    review: Review,
+    onClick: () -> Unit // 👈 Parámetro de click añadido
+) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = SurfaceDark),
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick // 👈 CORREGIDO: Añadido click para ir al perfil
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            // Cabecera con usuario
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (review.userPhoto.isNotBlank()) {
+                    AsyncImage(
+                        model = review.userPhoto,
+                        contentDescription = review.userName,
+                        modifier = Modifier.size(36.dp).clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(NeonBlue),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            review.userName.firstOrNull()?.toString() ?: "G",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(review.userName, color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(
+                        SimpleDateFormat("dd/MM/yy", Locale.getDefault()).format(Date(review.timestamp)),
+                        color = TextSecondary,
+                        fontSize = 11.sp
+                    )
+                }
+                // Puntuación
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = NeonBlue.copy(alpha = 0.15f)
+                ) {
+                    Text(
+                        "⭐ ${review.rating.toInt()}/10",
+                        color = NeonBlue,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+            HorizontalDivider(color = Color(0xFF2A2A2A))
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Nombre del juego
+            Text(
+                review.gameName,
+                color = NeonBlue,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            // Texto de la reseña
+            Text(
+                review.text,
+                color = TextSecondary,
+                fontSize = 13.sp,
+                lineHeight = 20.sp
+            )
         }
     }
 }

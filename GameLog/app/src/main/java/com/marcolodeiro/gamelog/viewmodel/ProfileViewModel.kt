@@ -77,3 +77,4 @@ class ProfileViewModel @Inject constructor(
         auth.signOut()
     }
 }
+

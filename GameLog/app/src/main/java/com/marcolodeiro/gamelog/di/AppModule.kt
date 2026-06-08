@@ -18,6 +18,7 @@ import com.marcolodeiro.gamelog.data.network.IgdbApiService
 import com.marcolodeiro.gamelog.data.network.IgdbAuthService
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import com.marcolodeiro.gamelog.data.network.NewsApiService
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -61,6 +62,15 @@ object AppModule {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(IgdbApiService::class.java)
+    }
+
+    @Provides @Singleton
+    fun provideNewsApiService(): NewsApiService {
+        return Retrofit.Builder()
+            .baseUrl("https://newsapi.org/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(NewsApiService::class.java)
     }
 
 }

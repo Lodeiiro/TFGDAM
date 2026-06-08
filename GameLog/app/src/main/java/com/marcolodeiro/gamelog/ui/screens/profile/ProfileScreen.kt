@@ -21,12 +21,18 @@ import coil.compose.AsyncImage
 import com.marcolodeiro.gamelog.ui.theme.*
 import com.marcolodeiro.gamelog.viewmodel.ProfileStats
 import com.marcolodeiro.gamelog.viewmodel.ProfileViewModel
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.PaddingValues
+import com.marcolodeiro.gamelog.ui.screens.home.ActiveGameCard
+import com.marcolodeiro.gamelog.viewmodel.HomeViewModel
 
 // Pantalla de perfil del usuario con estadísticas y opción de cerrar sesión
 @Composable
 fun ProfileScreen(
     onSignOut: () -> Unit,
-    viewModel: ProfileViewModel = hiltViewModel()
+    viewModel: ProfileViewModel = hiltViewModel(),
+    homeViewModel: HomeViewModel = hiltViewModel()
 ) {
     val stats by viewModel.stats.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -180,7 +186,55 @@ fun ProfileScreen(
                 }
             }
 
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+// ── CONTINUAR JUGANDO ─────────────────────────────────────────
+            val activeGames by homeViewModel.activeGames.collectAsState()
+
+            Text(
+                "CONTINUAR JUGANDO",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextSecondary,
+                letterSpacing = 2.sp,
+                modifier = Modifier.padding(horizontal = 24.dp)
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            if (activeGames.isEmpty()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceCard)
+                ) {
+                    Text(
+                        "No tienes juegos en progreso actualmente",
+                        color = TextSecondary,
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            } else {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(activeGames) { entry ->
+                        ActiveGameCard(
+                            title = entry.gameName,
+                            coverUrl = entry.gameCover,
+                            onClick = {}
+                        )
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(32.dp))
+
+
+
+
 
             // ── BOTÓN CERRAR SESIÓN ───────────────────────────────────────
             OutlinedButton(

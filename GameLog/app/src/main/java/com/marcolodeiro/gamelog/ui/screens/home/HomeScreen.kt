@@ -30,6 +30,7 @@ import coil.compose.AsyncImage
 import com.marcolodeiro.gamelog.ui.theme.*
 import com.marcolodeiro.gamelog.viewmodel.AuthViewModel
 import com.marcolodeiro.gamelog.viewmodel.HomeViewModel
+import com.marcolodeiro.gamelog.viewmodel.GameRecommendation
 
 @Composable
 fun HomeScreen(
@@ -44,10 +45,13 @@ fun HomeScreen(
     val playingCount by homeViewModel.playing.collectAsState()
     val completedCount by homeViewModel.completed.collectAsState()
     val pendingCount by homeViewModel.pending.collectAsState()
-
-    // 👈 CORREGIDO: Aquí deberías traer la lista real desde tu ViewModel.
-    // Por ahora, si pasas una lista de objetos Game con sus portadas URL se verán así:
+    val recommendations by homeViewModel.recommendations.collectAsState()
+    val recommendationsLoading by homeViewModel.recommendationsLoading.collectAsState()
     val activeGames by homeViewModel.activeGames.collectAsState()
+
+
+
+
 
     Box(
         modifier = Modifier
@@ -108,38 +112,50 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // ── CORREGIDO: CARRUSEL "CONTINUAR JUGANDO" CON IMÁGENES REALES ──
-            Text("CONTINUAR JUGANDO", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextSecondary, letterSpacing = 1.5.sp, modifier = Modifier.padding(horizontal = 24.dp))
+            // ── RECOMENDACIONES IA ────────────────────────────────────────
+            Text(
+                "ESTO PODRÍA INTERESARTE",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextSecondary,
+                letterSpacing = 1.5.sp,
+                modifier = Modifier.padding(horizontal = 24.dp)
+            )
             Spacer(modifier = Modifier.height(12.dp))
 
-            if (activeGames.isNotEmpty()) {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxWidth()
+
+            if (recommendationsLoading) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(24.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    items(activeGames) { entry ->
-                        ActiveGameCard(
-                            title = entry.gameName,
-                            coverUrl = entry.gameCover,
-                            onClick = onNavigateToLibrary
-                        )
-                    }
+                    CircularProgressIndicator(color = NeonBlue, modifier = Modifier.size(32.dp))
                 }
-            } else {
+            } else if (recommendations.isEmpty()) {
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = SurfaceCard)
                 ) {
                     Text(
-                        "No tienes juegos en progreso. ¡Añade uno desde Explorar!",
+                        "Añade juegos a tu biblioteca para recibir recomendaciones personalizadas",
                         color = TextSecondary,
                         fontSize = 13.sp,
                         modifier = Modifier.padding(16.dp)
                     )
                 }
+            } else {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(recommendations) { rec ->
+                        RecommendationCard(recommendation = rec)
+                    }
+                }
             }
+
+            Spacer(modifier = Modifier.height(28.dp))
 
             Spacer(modifier = Modifier.height(28.dp))
 
@@ -248,3 +264,49 @@ fun HomeMenuButton(modifier: Modifier = Modifier, icon: ImageVector, label: Stri
         }
     }
 }
+
+// Tarjeta de recomendación de juego con IA
+
+@Composable
+fun RecommendationCard(recommendation: GameRecommendation) {
+    Card(
+        modifier = Modifier.width(130.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = SurfaceDark)
+    ) {
+        Column {
+            if (recommendation.coverUrl.isNotBlank()) {
+                AsyncImage(
+                    model = recommendation.coverUrl,
+                    contentDescription = recommendation.name,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(160.dp)
+                        .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(160.dp)
+                        .background(SurfaceCard),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("🎮", fontSize = 36.sp)
+                }
+            }
+            Column(modifier = Modifier.padding(10.dp)) {
+                Text(
+                    text = recommendation.name,
+                    color = TextPrimary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+

@@ -30,6 +30,7 @@ android {
         buildConfigField("String", "IGDB_CLIENT_ID", "\"${localProperties.getProperty("IGDB_CLIENT_ID", "")}\"")
         buildConfigField("String", "IGDB_CLIENT_SECRET", "\"${localProperties.getProperty("IGDB_CLIENT_SECRET", "")}\"")
         buildConfigField("String", "GEMINI_API_KEY", "\"${localProperties.getProperty("GEMINI_API_KEY", "")}\"")
+        buildConfigField("String", "NEWS_API_KEY", "\"${localProperties.getProperty("NEWS_API_KEY", "")}\"")
     }
 
     compileOptions {
@@ -106,4 +107,5 @@ dependencies {
     implementation("com.google.ai.client.generativeai:generativeai:0.7.0")
 
     implementation("androidx.navigation:navigation-compose:2.8.0")
+
 }

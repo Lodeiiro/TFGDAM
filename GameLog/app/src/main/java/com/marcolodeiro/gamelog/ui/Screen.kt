@@ -21,4 +21,8 @@ sealed class Screen(val route: String, val title: String? = null, val icon: Imag
     object Detail : Screen("detail/{gameJson}") {
         fun createRoute(gameJson: String) = "detail/$gameJson"
     }
+
+    object PublicProfile : Screen("public_profile/{uid}") {
+        fun createRoute(uid: String) = "public_profile/$uid"
+    }
 }

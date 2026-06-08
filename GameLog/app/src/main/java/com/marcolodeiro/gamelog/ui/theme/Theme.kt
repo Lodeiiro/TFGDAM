@@ -30,6 +30,8 @@ val ColorWishlist   = Color(0xFFFF69B4)   // Rosa
 // Mantenemos AccentRed como alias de NeonBlue para no romper el código existente
 val AccentRed       = NeonBlue
 
+
+
 private val GameLogColorScheme = darkColorScheme(
     primary             = NeonBlue,
     onPrimary           = Color(0xFF000000),

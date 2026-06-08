@@ -36,6 +36,7 @@ import com.marcolodeiro.gamelog.ui.screens.feed.FeedScreen
 import com.marcolodeiro.gamelog.ui.screens.home.HomeScreen
 import com.marcolodeiro.gamelog.ui.screens.library.LibraryScreen
 import com.marcolodeiro.gamelog.ui.screens.profile.ProfileScreen
+import com.marcolodeiro.gamelog.ui.screens.profile.PublicProfileScreen
 import com.marcolodeiro.gamelog.ui.screens.social.SearchUsersScreen
 import com.marcolodeiro.gamelog.ui.theme.*
 import dagger.hilt.android.AndroidEntryPoint
@@ -182,11 +183,19 @@ fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) 
         }
 
         composable(Screen.Feed.route) {
-            FeedScreen()
+            FeedScreen(
+                onUserClick = { uid ->
+                    navController.navigate(Screen.PublicProfile.createRoute(uid))
+                }
+            )
         }
 
         composable(Screen.SearchUsers.route) {
-            SearchUsersScreen(onUserClick = {})
+            SearchUsersScreen(
+                onUserClick = { user ->
+                    navController.navigate(Screen.PublicProfile.createRoute(user.uid))
+                }
+            )
         }
 
         composable(Screen.Profile.route) {
@@ -213,6 +222,14 @@ fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) 
 
         composable(Screen.Chatbot.route) {
             ChatbotScreen()
+        }
+
+        composable(Screen.PublicProfile.route) { backStackEntry ->
+            val uid = backStackEntry.arguments?.getString("uid") ?: return@composable
+            PublicProfileScreen(
+                uid = uid,
+                onBack = { navController.popBackStack() }
+            )
         }
     }
 }
