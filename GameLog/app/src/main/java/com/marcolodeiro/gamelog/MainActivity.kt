@@ -27,12 +27,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.marcolodeiro.gamelog.data.model.ForumThread // Importamos el modelo del hilo
 import com.marcolodeiro.gamelog.ui.Screen
 import com.marcolodeiro.gamelog.ui.screens.auth.LoginScreen
 import com.marcolodeiro.gamelog.ui.screens.chatbot.ChatbotScreen
 import com.marcolodeiro.gamelog.ui.screens.detail.GameDetailScreen
 import com.marcolodeiro.gamelog.ui.screens.explore.ExploreScreen
 import com.marcolodeiro.gamelog.ui.screens.feed.FeedScreen
+import com.marcolodeiro.gamelog.ui.screens.forum.ForumThreadScreen // Importamos la pantalla del hilo
 import com.marcolodeiro.gamelog.ui.screens.home.HomeScreen
 import com.marcolodeiro.gamelog.ui.screens.library.LibraryScreen
 import com.marcolodeiro.gamelog.ui.screens.profile.ProfileScreen
@@ -54,7 +56,6 @@ class MainActivity : ComponentActivity() {
 
                 Scaffold(
                     floatingActionButton = {
-                        // El botón flotante se muestra si no estás en login o en el propio chat
                         if (currentRoute != Screen.Login.route && currentRoute != Screen.Chatbot.route) {
                             FloatingActionButton(
                                 onClick = {
@@ -72,7 +73,6 @@ class MainActivity : ComponentActivity() {
                         }
                     },
                     bottomBar = {
-                        // Ocultamos la barra solo en el Login
                         if (currentRoute != Screen.Login.route) {
                             BottomNavigationBar(navController, currentRoute)
                         }
@@ -90,7 +90,6 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun BottomNavigationBar(navController: NavHostController, currentRoute: String?) {
-    // Tus 6 pantallas manteniéndose firmes en la barra
     val items = listOf(
         Screen.Home,
         Screen.Explore,
@@ -115,7 +114,6 @@ fun BottomNavigationBar(navController: NavHostController, currentRoute: String?)
                 onClick = {
                     if (currentRoute != screen.route) {
                         navController.navigate(screen.route) {
-                            // Si pulsas "Inicio", limpia el backstack de manera inclusiva como tenías antes
                             if (screen == Screen.Home) {
                                 popUpTo(Screen.Home.route) { inclusive = true }
                             } else {
@@ -186,6 +184,11 @@ fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) 
             FeedScreen(
                 onUserClick = { uid ->
                     navController.navigate(Screen.PublicProfile.createRoute(uid))
+                },
+                onThreadClick = { thread ->
+                    // Guardamos el objeto de manera segura en la cola de navegación
+                    navController.currentBackStackEntry?.savedStateHandle?.set("selected_thread", thread)
+                    navController.navigate(Screen.ForumThread.route)
                 }
             )
         }
@@ -230,6 +233,18 @@ fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) 
                 uid = uid,
                 onBack = { navController.popBackStack() }
             )
+        }
+
+        // ── CORREGIDO: Recuperación limpia del hilo sin condicionar externamente el renderizado ──
+        composable(Screen.ForumThread.route) {
+            val thread = navController.previousBackStackEntry?.savedStateHandle?.get<ForumThread>("selected_thread")
+
+            if (thread != null) {
+                ForumThreadScreen(
+                    thread = thread,
+                    onBack = { navController.popBackStack() }
+                )
+            }
         }
     }
 }

@@ -21,26 +21,29 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.marcolodeiro.gamelog.data.model.FeedItem
+import com.marcolodeiro.gamelog.data.model.ForumThread // 👈 Importante para tus Foros
+import com.marcolodeiro.gamelog.data.model.NewsArticle
 import com.marcolodeiro.gamelog.ui.screens.detail.GameStatus
+import com.marcolodeiro.gamelog.ui.screens.forum.ForumScreen // 👈 Importamos tu pantalla de foros
 import com.marcolodeiro.gamelog.ui.theme.*
 import com.marcolodeiro.gamelog.viewmodel.FeedState
 import com.marcolodeiro.gamelog.viewmodel.FeedViewModel
-import java.text.SimpleDateFormat
-import java.util.*
-import com.marcolodeiro.gamelog.data.model.Review
-import com.marcolodeiro.gamelog.data.model.NewsArticle
 import com.marcolodeiro.gamelog.viewmodel.NewsState
 import com.marcolodeiro.gamelog.viewmodel.NewsViewModel
+import java.text.SimpleDateFormat
+import java.util.*
 
 @Composable
 fun FeedScreen(
-    onUserClick: (String) -> Unit, // 👈 Recibido de MainActivity
+    onUserClick: (String) -> Unit,
+    onThreadClick: (ForumThread) -> Unit, // 👈 CAMBIADO: Recibimos el click para abrir un hilo
     viewModel: FeedViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
-    val reviews by viewModel.reviews.collectAsState()
     var selectedTab by remember { mutableStateOf(0) }
-    val tabs = listOf("Actividad", "Opiniones", "Noticias")
+
+    // 👈 CAMBIADO: "Opiniones" pasa a mejor vida, ahora es "Foros"
+    val tabs = listOf("Actividad", "Foros", "Noticias")
 
     Column(
         modifier = Modifier
@@ -88,10 +91,10 @@ fun FeedScreen(
             }
         }
 
-        // 👈 CORREGIDO: Ahora pasamos onUserClick a las pestañas correspondientes
+        // 👈 ENRUTADO PERFECTO: Adiós reviews, hola ForumScreen
         when (selectedTab) {
             0 -> ActivityTabContent(state, viewModel, onlyReviews = false, onUserClick = onUserClick)
-            1 -> ReviewsTabContent(reviews, onUserClick = onUserClick)
+            1 -> ForumScreen(onThreadClick = onThreadClick) // 👈 Cargamos tus foros pasándole el click
             2 -> NewsTabContent()
         }
     }
@@ -102,7 +105,7 @@ fun ActivityTabContent(
     state: FeedState,
     viewModel: FeedViewModel,
     onlyReviews: Boolean,
-    onUserClick: (String) -> Unit // 👈 Pasado por parámetro
+    onUserClick: (String) -> Unit
 ) {
     when (val currentState = state) {
         is FeedState.Loading -> {
@@ -122,17 +125,11 @@ fun ActivityTabContent(
             }
         }
         is FeedState.Success -> {
-            val itemsToShow = if (onlyReviews) {
-                currentState.items.filter { it.status == "COMPLETED" || it.status == "PLATINUM" }
-            } else {
-                currentState.items
-            }
+            val itemsToShow = currentState.items
 
             if (itemsToShow.isEmpty()) {
-                val emptyText = if (onlyReviews) "Aún no hay opiniones o análisis de juegos publicados." else "Sigue a otros gamers para ver su actividad."
-                EmptyStateView(icon = if (onlyReviews) "📝" else "👥", text = emptyText)
+                EmptyStateView(icon = "👥", text = "Sigue a otros gamers para ver su actividad.")
             } else {
-                // 👈 CORREGIDO: Rellenado el LazyColumn para pintar los FeedItemCard reales
                 LazyColumn(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -140,7 +137,7 @@ fun ActivityTabContent(
                     items(itemsToShow) { item ->
                         FeedItemCard(
                             item = item,
-                            onClick = { onUserClick(item.userId) } // 👈 Al pulsar, envía el userId
+                            onClick = { onUserClick(item.userId) }
                         )
                     }
                 }
@@ -187,7 +184,6 @@ fun NewsCard(article: NewsArticle) {
 
     Card(
         onClick = {
-            // Abre la noticia en el navegador
             val intent = android.content.Intent(
                 android.content.Intent.ACTION_VIEW,
                 android.net.Uri.parse(article.url)
@@ -199,7 +195,6 @@ fun NewsCard(article: NewsArticle) {
         modifier = Modifier.fillMaxWidth()
     ) {
         Column {
-            // Imagen de la noticia
             if (article.urlToImage.isNotBlank()) {
                 AsyncImage(
                     model = article.urlToImage,
@@ -213,7 +208,6 @@ fun NewsCard(article: NewsArticle) {
             }
 
             Column(modifier = Modifier.padding(14.dp)) {
-                // Fuente y fecha
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -240,7 +234,6 @@ fun NewsCard(article: NewsArticle) {
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Título
                 Text(
                     text = article.title,
                     color = TextPrimary,
@@ -250,7 +243,6 @@ fun NewsCard(article: NewsArticle) {
                     overflow = TextOverflow.Ellipsis
                 )
 
-                // Descripción
                 if (article.description.isNotBlank()) {
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
@@ -265,7 +257,6 @@ fun NewsCard(article: NewsArticle) {
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Botón leer más
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
@@ -296,7 +287,7 @@ fun EmptyStateView(icon: String, text: String) {
 @Composable
 fun FeedItemCard(
     item: FeedItem,
-    onClick: () -> Unit // 👈 Parámetro de click añadido
+    onClick: () -> Unit
 ) {
     val statusLabel = GameStatus.entries.find { it.name == item.status }?.label ?: item.status
     val statusColor = when (item.status) {
@@ -322,7 +313,7 @@ fun FeedItemCard(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceDark),
         modifier = Modifier.fillMaxWidth(),
-        onClick = onClick // 👈 CORREGIDO: Hacemos la tarjeta clickable
+        onClick = onClick
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
@@ -365,117 +356,6 @@ fun FeedItemCard(
                     }
                 }
             }
-        }
-    }
-}
-
-// Pestaña de opiniones con reseñas reales de Firestore
-@Composable
-fun ReviewsTabContent(
-    reviews: List<Review>,
-    onUserClick: (String) -> Unit // 👈 Añadido parámetro
-) {
-    if (reviews.isEmpty()) {
-        EmptyStateView(
-            icon = "📝",
-            text = "Sigue a otros gamers para ver sus reseñas aquí"
-        )
-    } else {
-        LazyColumn(
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(reviews) { review ->
-                ReviewFeedCard(
-                    review = review,
-                    onClick = { onUserClick(review.userId) } // 👈 Captura el click
-                )
-            }
-        }
-    }
-}
-
-// Tarjeta de reseña en el feed
-@Composable
-fun ReviewFeedCard(
-    review: Review,
-    onClick: () -> Unit // 👈 Parámetro de click añadido
-) {
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceDark),
-        modifier = Modifier.fillMaxWidth(),
-        onClick = onClick // 👈 CORREGIDO: Añadido click para ir al perfil
-    ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            // Cabecera con usuario
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (review.userPhoto.isNotBlank()) {
-                    AsyncImage(
-                        model = review.userPhoto,
-                        contentDescription = review.userName,
-                        modifier = Modifier.size(36.dp).clip(CircleShape),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(NeonBlue),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            review.userName.firstOrNull()?.toString() ?: "G",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.width(10.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(review.userName, color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    Text(
-                        SimpleDateFormat("dd/MM/yy", Locale.getDefault()).format(Date(review.timestamp)),
-                        color = TextSecondary,
-                        fontSize = 11.sp
-                    )
-                }
-                // Puntuación
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = NeonBlue.copy(alpha = 0.15f)
-                ) {
-                    Text(
-                        "⭐ ${review.rating.toInt()}/10",
-                        color = NeonBlue,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-            HorizontalDivider(color = Color(0xFF2A2A2A))
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Nombre del juego
-            Text(
-                review.gameName,
-                color = NeonBlue,
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            // Texto de la reseña
-            Text(
-                review.text,
-                color = TextSecondary,
-                fontSize = 13.sp,
-                lineHeight = 20.sp
-            )
         }
     }
 }
