@@ -36,13 +36,13 @@ import java.util.*
 @Composable
 fun FeedScreen(
     onUserClick: (String) -> Unit,
-    onThreadClick: (ForumThread) -> Unit, // 👈 CAMBIADO: Recibimos el click para abrir un hilo
+    onThreadClick: (ForumThread) -> Unit,
     viewModel: FeedViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
     var selectedTab by remember { mutableStateOf(0) }
 
-    // 👈 CAMBIADO: "Opiniones" pasa a mejor vida, ahora es "Foros"
+
     val tabs = listOf("Actividad", "Foros", "Noticias")
 
     Column(
@@ -91,10 +91,10 @@ fun FeedScreen(
             }
         }
 
-        // 👈 ENRUTADO PERFECTO: Adiós reviews, hola ForumScreen
+
         when (selectedTab) {
             0 -> ActivityTabContent(state, viewModel, onlyReviews = false, onUserClick = onUserClick)
-            1 -> ForumScreen(onThreadClick = onThreadClick) // 👈 Cargamos tus foros pasándole el click
+            1 -> ForumScreen(onThreadClick = onThreadClick)
             2 -> NewsTabContent()
         }
     }

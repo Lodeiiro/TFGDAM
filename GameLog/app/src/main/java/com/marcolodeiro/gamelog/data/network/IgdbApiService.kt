@@ -13,6 +13,6 @@ interface IgdbApiService {
     suspend fun getGames(
         @Header("Client-ID") clientId: String,
         @Header("Authorization") authorization: String,
-        @Body query: RequestBody  // Usamos RequestBody para enviar texto plano
+        @Body query: RequestBody
     ): List<Game>
 }

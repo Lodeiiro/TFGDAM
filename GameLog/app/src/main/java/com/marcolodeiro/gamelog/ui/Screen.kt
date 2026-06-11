@@ -5,7 +5,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(val route: String, val title: String? = null, val icon: ImageVector? = null) {
-    // Pantalla de Auth (Fuera de la barra inferior)
+    // Pantalla de Auth
     object Login : Screen("login")
 
     // Las 6 pantallas de tu barra inferior (Se quedan todas)
@@ -16,7 +16,7 @@ sealed class Screen(val route: String, val title: String? = null, val icon: Imag
     object SearchUsers : Screen("search_users", "Gamers", Icons.Default.People)
     object Profile : Screen("profile", "Perfil", Icons.Default.Person)
 
-    // Pantallas secundarias (Fuera de la barra inferior)
+    // Pantallas secundarias
     object Chatbot : Screen("chatbot")
     object Detail : Screen("detail/{gameJson}") {
         fun createRoute(gameJson: String) = "detail/$gameJson"

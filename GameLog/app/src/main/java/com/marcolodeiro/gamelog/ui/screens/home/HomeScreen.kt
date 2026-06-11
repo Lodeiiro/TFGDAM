@@ -37,7 +37,7 @@ fun HomeScreen(
     onNavigateToExplore: () -> Unit,
     onNavigateToLibrary: () -> Unit,
     onNavigateToProfile: () -> Unit,
-    onNavigateToChatbot: () -> Unit, // 👈 CORREGIDO: Añadido callback al chatbot
+    onNavigateToChatbot: () -> Unit,
     authViewModel: AuthViewModel = hiltViewModel(),
     homeViewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -218,7 +218,7 @@ fun CompactStatCard(modifier: Modifier = Modifier, number: String, label: String
     }
 }
 
-// 👈 CORREGIDO: Añadido soporte para renderizar la carátula real mediante URL
+
 @Composable
 fun ActiveGameCard(title: String, coverUrl: String, onClick: () -> Unit) {
     Card(

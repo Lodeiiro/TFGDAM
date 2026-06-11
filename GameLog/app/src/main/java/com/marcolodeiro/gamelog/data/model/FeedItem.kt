@@ -9,6 +9,6 @@ data class FeedItem(
     val gameId: Int = 0,
     val gameName: String = "",
     val gameCover: String = "",
-    val status: String = "",        // Estado que le ha puesto al juego
+    val status: String = "",
     val timestamp: Long = System.currentTimeMillis()
 )

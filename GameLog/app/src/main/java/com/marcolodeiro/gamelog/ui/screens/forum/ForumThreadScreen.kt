@@ -31,7 +31,7 @@ import java.util.*
 
 @Composable
 fun ForumThreadScreen(
-    thread: ForumThread,
+    thread: ForumThread, //  Volvemos a recibir el objeto ForumThread esperado
     onBack: () -> Unit,
     viewModel: ForumViewModel = hiltViewModel()
 ) {
@@ -39,9 +39,6 @@ fun ForumThreadScreen(
     val isPosting by viewModel.isPosting.collectAsState()
     var replyText by remember { mutableStateOf("") }
 
-    // 🌟 CORRECCIÓN CRÍTICA: Forzamos la carga de datos de manera limpia y local.
-    // Al usar el MainActivity tradicional con savedStateHandle, esta pantalla se monta
-    // de cero correctamente y maneja el estado de carga (Loading) de forma interna.
     LaunchedEffect(thread.id) {
         viewModel.loadThread(thread)
     }
@@ -86,7 +83,7 @@ fun ForumThreadScreen(
             }
         }
 
-        // ── CONTENIDO VIA STATE ───────────────────────────────────────────
+        // ── CONTENIDO PRINCIPAL SEGÚN ESTADO ──────────────────────────────
         when (val currentState = threadState) {
             is ThreadState.Loading -> {
                 Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -108,9 +105,7 @@ fun ForumThreadScreen(
                     item {
                         Card(
                             shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = NeonBlue.copy(alpha = 0.1f)
-                            ),
+                            colors = CardDefaults.cardColors(containerColor = NeonBlue.copy(alpha = 0.1f)),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(modifier = Modifier.padding(14.dp)) {
@@ -124,17 +119,10 @@ fun ForumThreadScreen(
                                         )
                                     } else {
                                         Box(
-                                            modifier = Modifier
-                                                .size(36.dp)
-                                                .clip(CircleShape)
-                                                .background(NeonBlue),
+                                            modifier = Modifier.size(36.dp).clip(CircleShape).background(NeonBlue),
                                             contentAlignment = Alignment.Center
                                         ) {
-                                            Text(
-                                                thread.userName.firstOrNull()?.toString() ?: "G",
-                                                color = Color.White,
-                                                fontWeight = FontWeight.Bold
-                                            )
+                                            Text(thread.userName.firstOrNull()?.toString() ?: "G", color = Color.White, fontWeight = FontWeight.Bold)
                                         }
                                     }
                                     Spacer(modifier = Modifier.width(10.dp))
@@ -153,20 +141,16 @@ fun ForumThreadScreen(
                         }
                     }
 
-                    // Contador de respuestas dinámico
+                    // Separador de respuestas
                     item {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFF2A2A2A))
-                            Text(
-                                "  ${currentState.replies.size} respuestas  ",
-                                color = TextSecondary,
-                                fontSize = 12.sp
-                            )
+                            Text("  ${currentState.replies.size} respuestas  ", color = TextSecondary, fontSize = 12.sp)
                             HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFF2A2A2A))
                         }
                     }
 
-                    // Lista de comentarios/respuestas de la comunidad
+                    // Lista de comentarios
                     items(currentState.replies) { reply ->
                         ReplyCard(reply = reply)
                     }
@@ -174,7 +158,7 @@ fun ForumThreadScreen(
             }
         }
 
-        // ── CAMPO DE RESPUESTA OPTIMIZADO ─────────────────────────────────
+        // ── CAMPO DE ENVIAR RESPUESTA ─────────────────────────────────────
         HorizontalDivider(color = Color(0xFF2A2A2A))
         Row(
             modifier = Modifier
@@ -201,16 +185,13 @@ fun ForumThreadScreen(
             Spacer(modifier = Modifier.width(8.dp))
             IconButton(
                 onClick = {
-                    // 🌟 MEJORA: Eliminamos la dependencia estricta del estado en caliente.
-                    // Usamos el objeto "thread" seguro inyectado en la vista para responder siempre bien.
                     if (replyText.isNotBlank() && !isPosting) {
+                        // Enviamos usando el ID y el objeto thread que vino por parámetro
                         viewModel.addReply(thread.id, replyText, thread)
                         replyText = ""
                     }
                 },
-                modifier = Modifier
-                    .size(44.dp)
-                    .background(NeonBlue, CircleShape),
+                modifier = Modifier.size(44.dp).background(NeonBlue, CircleShape),
                 enabled = replyText.isNotBlank() && !isPosting
             ) {
                 Icon(Icons.Default.Send, contentDescription = "Enviar", tint = Color.White)
@@ -219,7 +200,6 @@ fun ForumThreadScreen(
     }
 }
 
-// Tarjeta de respuesta con diseño scannable
 @Composable
 fun ReplyCard(reply: ForumReply) {
     Card(
@@ -238,18 +218,10 @@ fun ReplyCard(reply: ForumReply) {
                     )
                 } else {
                     Box(
-                        modifier = Modifier
-                            .size(30.dp)
-                            .clip(CircleShape)
-                            .background(NeonBlue),
+                        modifier = Modifier.size(30.dp).clip(CircleShape).background(NeonBlue),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            reply.userName.firstOrNull()?.toString() ?: "G",
-                            color = Color.White,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Text(reply.userName.firstOrNull()?.toString() ?: "G", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                 }
                 Spacer(modifier = Modifier.width(8.dp))

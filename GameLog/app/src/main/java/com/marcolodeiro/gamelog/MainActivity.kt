@@ -27,14 +27,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.marcolodeiro.gamelog.data.model.ForumThread // Importamos el modelo del hilo
+import com.marcolodeiro.gamelog.data.model.ForumThread
 import com.marcolodeiro.gamelog.ui.Screen
 import com.marcolodeiro.gamelog.ui.screens.auth.LoginScreen
 import com.marcolodeiro.gamelog.ui.screens.chatbot.ChatbotScreen
 import com.marcolodeiro.gamelog.ui.screens.detail.GameDetailScreen
 import com.marcolodeiro.gamelog.ui.screens.explore.ExploreScreen
 import com.marcolodeiro.gamelog.ui.screens.feed.FeedScreen
-import com.marcolodeiro.gamelog.ui.screens.forum.ForumThreadScreen // Importamos la pantalla del hilo
+import com.marcolodeiro.gamelog.ui.screens.forum.ForumThreadScreen
 import com.marcolodeiro.gamelog.ui.screens.home.HomeScreen
 import com.marcolodeiro.gamelog.ui.screens.library.LibraryScreen
 import com.marcolodeiro.gamelog.ui.screens.profile.ProfileScreen
@@ -180,15 +180,19 @@ fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) 
             LibraryScreen()
         }
 
+// ── CONFIGURACIÓN DEL FEED BLINDADA ──
         composable(Screen.Feed.route) {
             FeedScreen(
                 onUserClick = { uid ->
                     navController.navigate(Screen.PublicProfile.createRoute(uid))
                 },
                 onThreadClick = { thread ->
-                    // Guardamos el objeto de manera segura en la cola de navegación
-                    navController.currentBackStackEntry?.savedStateHandle?.set("selected_thread", thread)
-                    navController.navigate(Screen.ForumThread.route)
+                    // Convertimos el objeto ForumThread a JSON string y lo codificamos para la URL
+                    val threadJson = java.net.URLEncoder.encode(
+                        com.google.gson.Gson().toJson(thread),
+                        "UTF-8"
+                    ).replace("+", "%20")
+                    navController.navigate("${Screen.ForumThread.route}/$threadJson")
                 }
             )
         }
@@ -235,16 +239,21 @@ fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) 
             )
         }
 
-        // ── CORREGIDO: Recuperación limpia del hilo sin condicionar externamente el renderizado ──
-        composable(Screen.ForumThread.route) {
-            val thread = navController.previousBackStackEntry?.savedStateHandle?.get<ForumThread>("selected_thread")
 
-            if (thread != null) {
-                ForumThreadScreen(
-                    thread = thread,
-                    onBack = { navController.popBackStack() }
-                )
-            }
+// ── CONFIGURACIÓN DE LA PANTALLA DEL HILO CON GSON ──
+        composable("${Screen.ForumThread.route}/{threadJson}") { backStackEntry ->
+            val threadJson = backStackEntry.arguments?.getString("threadJson") ?: return@composable
+
+            // Reconstruimos el objeto ForumThread original desde el JSON
+            val thread = com.google.gson.Gson().fromJson(
+                java.net.URLDecoder.decode(threadJson, "UTF-8"),
+                ForumThread::class.java
+            )
+
+            ForumThreadScreen(
+                thread = thread, //  Pasamos el objeto completo que espera el ViewModel
+                onBack = { navController.popBackStack() }
+            )
         }
     }
 }
